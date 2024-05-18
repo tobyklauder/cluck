@@ -12,6 +12,21 @@ code {
     monospace;
 }
 
+#best {
+  border: 2px solid transparent; /* Start with a transparent border */
+  box-shadow: 0 0 10px 5px yellow; /* Add a glowing effect using box-shadow */
+  animation: glow 1s infinite alternate; /* Apply a pulsating effect using animation */
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px 5px yellow; /* Start with a glow */
+  }
+  to {
+    box-shadow: 0 0 15px 10px yellow; /* Increase the glow effect */
+  }
+}
+
 
 html{
   justify-content: center;

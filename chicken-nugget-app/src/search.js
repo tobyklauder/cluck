@@ -30,22 +30,24 @@ function SearchBar({ onSearch }) {
   };
 
   return (
-    <form  onSubmit={handleSearch}>
+    <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', width: '50%', marginLeft: '25%', marginRight: '25%'}}>
       <input
         type="text"
         placeholder="Search brand..."
         value={brand}
         onChange={handleBrandChange}
+        style={{ padding: '5px', borderRadius: '5px', border: '1px solid #ccc', flexGrow: 1 }}
       />
       <input 
         type="text"
         placeholder="Search product..."
         value={product}
         onChange={handleProductChange}
-        />
-      <button  type="submit">Search</button>
+        style={{ padding: '5px', borderRadius: '5px', border: '1px solid #ccc', flexGrow: 1 }}
+      />
+      <button type="submit" style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #007BFF', backgroundColor: '#007BFF', color: 'white', cursor: 'pointer' }}>Search</button>
     </form>
-  );
+  );  
 }
 
 export default SearchBar;

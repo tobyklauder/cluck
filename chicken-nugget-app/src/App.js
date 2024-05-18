@@ -5,38 +5,63 @@ import axios from 'axios';
 
 function App() {
   const [searchResults, setSearchResults] = useState([]);
+  const [bestNugget, setBestNugget] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/products');
-        setSearchResults(response.data);
+        const [bestNuggetResponse, searchResultsResponse] = await Promise.all([
+          axios.get('http://localhost:5001/api/best_nugget'),
+          axios.get('http://localhost:5001/api/products'),
+        ]);
+
+        setBestNugget(bestNuggetResponse.data[0]);
+        setSearchResults(searchResultsResponse.data);
       } catch (error) {
-        console.error('Error fetching search results:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
     fetchData();
-  }, []); // Run this effect only once when the component mounts
+  }, []);
+
+  const updateBestNuggetRating = async (newRating) => {
+    try {
+      const response = await axios.put('http://localhost:5001/api/products', { productId: bestNugget.id, rating: newRating });
+      let updatedBestNugget = { ...bestNugget, rating: response.data.rating };
+      setBestNugget(updatedBestNugget);
+    } catch (error) {
+      console.error('Error updating best nugget rating:', error);
+    }
+  };
 
   const handleSearch = (results) => {
     setSearchResults(results);
   };
 
+  const updateBestNugget = (newBestNugget) => {
+    setBestNugget(newBestNugget);
+  };
+  
+
   const handleRating = async (productId, rating) => {
     try {
-      // Update the rating on the server
-      await axios.put('http://localhost:5001/api/products', { productId, rating });
+      const response = await axios.put('http://localhost:5001/api/products', { productId, rating });
+      let newRating = response.data.rating;
 
-      // Update the searchResults state with the new rating
-      const updatedResults = searchResults.map((result) => {
-        if (result.id === productId) {
-          return { ...result, rating };
-        }
-        return result;
+      if (bestNugget && bestNugget.id === productId) {
+        updateBestNuggetRating(newRating);
+      }
+
+      setSearchResults((prevResults) => {
+        return prevResults.map((result) => {
+          if (result.id === productId) {
+            return { ...result, rating: newRating };
+          }
+          return result;
+        });
       });
 
-      setSearchResults(updatedResults);
     } catch (error) {
       console.error('Error updating rating:', error);
     }
@@ -44,27 +69,49 @@ function App() {
 
   return (
     <div className="App">
-      <body> 
-      <img src="/nugg.png" alt="nugg"/>
-        <SearchBar onSearch={handleSearch} />
-        <div id = "results"> 
-        {searchResults.map((result) => (
-          <div key={result.id} className="chicken">
-            <h3>{result.brand_name}</h3> 
-            <p>{result.description}</p>
-            <p>{result.ingredients}</p> 
+      <body>
+        <img src="/nugg.png" alt="nugg" />
+        
+        <div id="results">
+          {bestNugget && (
+            <div id = "best" key={bestNugget.id} className="chicken">
+              <h3>{bestNugget.brand_name}</h3>
+              <p>{bestNugget.description}</p>
+              <p>Ingredients: {bestNugget.ingredients}</p>
 
-            <div className="rating-buttons">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button key={value} className="rating-button" onClick={() => handleRating(result.id, value)}>{value}</button>
-              ))}
+              <div className="rating-buttons">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button key={value} className="rating-button" onClick={() => handleRating(bestNugget.id, value)}>
+                    {value}
+                  </button>
+                ))}
+              </div>
+
+              <p>Current Rating: {bestNugget.rating.toFixed(2)}</p>
             </div>
+          )}
 
-            <p>Current Rating: {result.rating}</p>
-          </div>
-        ))}
-        </div> 
-      </body> 
+          <SearchBar onSearch={handleSearch} />
+
+          {searchResults.map((result) => (
+            <div key={result.id} className="chicken">
+              <h3>{result.brand_name}</h3>
+              <p>{result.description}</p>
+              <p>Ingredients: {result.ingredients}</p>
+
+              <div className="rating-buttons">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button key={value} className="rating-button" onClick={() => handleRating(result.id, value)}>
+                    {value}
+                  </button>
+                ))}
+              </div>
+
+              <p>Current Rating: {result.rating.toFixed(2)}</p>
+            </div>
+          ))}
+        </div>
+      </body>
     </div>
   );
 }

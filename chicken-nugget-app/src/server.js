@@ -2,11 +2,13 @@ const cors = require('cors');
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
-const dbPath = '../../chicken_nuggs.db';
+const dbPath = 'chicken_nuggs.db';
 const db = new sqlite3.Database(dbPath);
 
+app.use(express.static(path.join(__dirname, 'build')));
 
 db.serialize(() => {
   db.all('SELECT * FROM chicken_nuggets LIMIT 1', (err, rows) => {

@@ -7,7 +7,7 @@ const path = require('path');
 
 // test connection to the database
 const app = express();
-const dbPath = '../chicken_nuggs.db';
+const dbPath = '../data_generation/chicken_nuggs.db';
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error connecting to database:', err.message);

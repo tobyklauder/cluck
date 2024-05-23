@@ -1,31 +1,33 @@
+// include dependencies 
 const cors = require('cors');
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const path = require('path');
 
+// test connection to the database
 const app = express();
-const dbPath = 'chicken_nuggs.db';
-const db = new sqlite3.Database(dbPath);
-
-app.use(express.static(path.join(__dirname, 'build')));
-
-db.serialize(() => {
-  db.all('SELECT * FROM chicken_nuggets LIMIT 1', (err, rows) => {
-    if (err) {
-      console.error('Error querying database:', err.message);
-    } else {
-      console.log('Database connected successfully!');
-      console.log('Sample row:', rows[0]);
-    }
-  });
+const dbPath = '../chicken_nuggs.db';
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Error connecting to database:', err.message);
+  } else {
+    console.log('Connected to the SQLite database.');
+  }
 });
 
+
+// set up the server to serve static files from build 
+app.use(express.static(path.join(__dirname, 'build')));
+
+// ensure the application uses cors
 app.use(cors());
+
+// set up parsing for incoming request bodies 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
+// set up default headers 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -33,10 +35,14 @@ app.use((req, res, next) => {
   next();
 });
 
+
+// get the products as a result of a query including brand name and product description 
 app.get('/api/products', (req, res) => {
+
+    // get the brand and product from the query. 
     const { brand, product } = req.query;
 
-
+    // the sql query from the database 
     const sql = `
   SELECT DISTINCT chicken_nuggets.*, ratings.rating AS rating
   FROM chicken_nuggets
@@ -44,17 +50,22 @@ app.get('/api/products', (req, res) => {
   WHERE chicken_nuggets.brand_name LIKE '%${brand}%' AND chicken_nuggets.description LIKE '%${product}%'
     `;
 
+    // execute the sql query (handling errors)
     db.all(sql, (err, rows) => {
       if (err) {
         console.error('Error executing query:', err.message); 
         return res.status(500).json({ error: 'Internal Server Error' });
       }
+
+      // respond with all resulting entries
       res.json(rows);
     });
   });
 
 
+// api endpoint to determine the current best nugget (or chicken product in the database)
 app.get('/api/best_nugget', (req, res) => {
+
     const sql = `SELECT 
     chicken_nuggets.id, 
     chicken_nuggets.brand_name, 
@@ -90,7 +101,7 @@ LIMIT
   app.put('/api/products', (req, res) => {
     const { productId, rating } = req.body;
   
-    // Fetch the existing rating and total ratings from the database
+    // get the rating for the current product by it's product id 
     const fetchSql = `SELECT rating, total_ratings FROM ratings WHERE chicken_nugget_id = ?`;
     db.get(fetchSql, [productId], (err, row) => {
       if (err) {
@@ -103,13 +114,13 @@ LIMIT
         return res.status(404).json({ error: `Product with ID ${productId} not found` });
       }
   
-      // Calculate the new average rating
+      // calculate the new rating (average of new + existing)
       const existingRating = row.rating;
       const totalRatings = row.total_ratings;
       const newTotalRatings = totalRatings + 1;
       const newRating = ((existingRating * totalRatings) + rating) / newTotalRatings;
   
-      // Update the product's rating and total ratings in the database
+      // update the rating for the product 
       const updateSql = `UPDATE ratings SET rating = ?, total_ratings = ? WHERE chicken_nugget_id = ?`;
       db.run(updateSql, [newRating, newTotalRatings, productId], function(err) {
         if (err) {
@@ -118,7 +129,7 @@ LIMIT
         }
         console.log(`Rating updated successfully for product with ID ${productId}`);
   
-        // Respond with the new average rating
+        // respond with the new average rating to be displayed on the site 
         res.json({ rating: newRating });
       });
     });
